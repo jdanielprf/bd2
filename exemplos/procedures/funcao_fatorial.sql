@@ -1,14 +1,16 @@
 delimiter $$
-create function fatorial(n1 int)
+create function fatorial(n int)
 returns int
 begin
-
-	if n1 = 0 or n1 = 1 then
-		return 1;
-    else 
-		return n1 * fatorial(n1-1);
-    end if;
-end $$;
+	declare c int default 1;
+	declare fat int default 1;
+	while c<=n do
+		set fat= fat*c;
+		set c = c + 1;
+	end while;
+	return fat;
+end 
+$$;
 
 
 
