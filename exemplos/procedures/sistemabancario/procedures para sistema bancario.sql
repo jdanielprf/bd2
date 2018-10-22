@@ -5,6 +5,7 @@ create table conta(
 	numero int primary key auto_increment,
 	saldo numeric(11,2) not null default 0,
     nome varchar(200),
+    cpf numeric(11) not null,
     dataNascimento date not null,
     lastUpdate TIMESTAMP default CURRENT_TIMESTAMP
 ) engine = INNODB;
@@ -19,9 +20,9 @@ create table historico(
 
 DELIMITER //
 
-create procedure criar_conta(nome varchar(200), dataNascimento date)
+create procedure criar_conta(nome varchar(200), cpf numeric(11), dataNascimento date)
 begin
-	insert into conta(nome,dataNascimento) values(nome,dataNascimento);
+	insert into conta(nome,cpf,dataNascimento) values(nome,cpf,dataNascimento);
 end
 //
 
@@ -29,7 +30,7 @@ drop procedure if exists transferencia;
 DELIMITER //
 create procedure transferencia(conta1 int, conta2 int, valor numeric(8,2))
 begin
-	declare saldoC1, saldoC2 numeric(8,2);
+	declare saldoC1 numeric(8,2);
     declare quantidade integer default null;
     start transaction;
     select count(0) into quantidade from conta where  numero=conta1;
@@ -38,7 +39,7 @@ begin
 	else
     
 			select saldo into saldoC1 from conta where numero=conta1;
-			select saldo into saldoC2 from conta where numero=conta2;
+			
 			if saldoC1>=valor then
 				update conta set saldo=saldo-valor  where numero=conta1;
 				update conta set saldo=saldo+valor  where numero=conta2;
@@ -65,8 +66,20 @@ end;
 DELIMITER //
 create procedure deposito(conta1 int, valor numeric(8,2))
 begin
+	declare quantidade int;
+    declare saldoc1 numeric(8,2);
+    start transaction;
+	select count(0) into quantidade from conta where numero=conta1;
+    if quantidade != 1 then
+		SIGNAL SQLSTATE '01000' SET MESSAGE_TEXT = 'Conta nao existe', MYSQL_ERRNO = 69;
+    else
+		select saldo into saldoc1 from conta where numero=conta1;
+		update conta set saldo=saldo+valor where numero=conta1;
+        insert into historico (numero,saldoAtual,saldoAnterior,operacao)
+			values(conta1,saldoc1+valor,saldoc1,'deposito');
+		commit;
+	end if;
 end;
 //
-
 
 
